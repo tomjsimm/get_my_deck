@@ -39,7 +39,7 @@ python get_my_deck.py --email <your_email> --password <your_password> --send_to_
 | `--send_to_email` | Email address to send notifications to         | Yes      | N/A     |
 | `--smtp_host`   | SMTP host for sending email                      | Yes      | N/A     |
 | `--test_email`  | Send a test email and exit                       | No       | False   |
-| `--refresh_time`| Time in seconds between page refreshes           | No       | 60      |
+| `--refresh_time`| Time in seconds between page refreshes           | No       | 3600    |
 
 ## Credits
 

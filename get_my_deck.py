@@ -111,6 +111,6 @@ if __name__ == "__main__":
     parser.add_argument('--send_to_email', required=True, help='Email address to send notifications to')
     parser.add_argument('--smtp_host', required=True, help='SMTP host for sending email')
     parser.add_argument('--test_email', action='store_true', help='Send a test email and exit')
-    parser.add_argument('--refresh_time', type=int, default=60, help='Time in seconds between page refreshes')
+    parser.add_argument('--refresh_time', type=int, default=3600, help='Time in seconds between page refreshes')
     args = parser.parse_args()
     get_my_deck(args.email, args.password, args.send_to_email, args.smtp_host, args.test_email, args.refresh_time)
