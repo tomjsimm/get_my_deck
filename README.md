@@ -1,23 +1,46 @@
-# get_my_deck
-A simple scraper which checks the Steam Deck Refurb page for stock (64gb) since there doesn't seem to be any for refurbs out there and definitely no official way of doing this.
-Other options for webscrapers were paid.
+# Steam Deck Refurbished Stock Checker
 
-The parts that need editing are in the ## comments.
+A simple scraper which checks the Steam Deck Refurb page for stock. This script sends email notifications when the Steam Deck is in stock.
 
-Requirements: 
-Python - Latest is fine
-Selenium Chrome Drivers for Python via PIP
-https://tecadmin.net/setup-selenium-with-python-on-ubuntu-debian/
+## Requirements
 
-Free Twilio Account and installation via PIP
-pip install twilio 
+- Python (Latest version)
+- Selenium WebDriver for Firefox via PIP
+  ```sh
+  pip install selenium webdriver-manager
+  ```
+- Email account for sending notifications
 
-Pycharm(or another IDE) - optional
-If you require a different model size, then a tiny bit of googling/coding to change the text params to capture the different size model
+## Getting Started
 
-To Run:
+### Command Line
 
-Command line - python get_my_deck.py
+```sh
+python get_my_deck.py --email <your_email> --password <your_password> --send_to_email <recipient_email> --smtp_host <smtp_host> [--test_email] [--refresh_time <seconds>]
+```
 
-This is my first bit of public code - however I put a continuous checker for 20 secs and measures to reloop and rerun if things go wrong.
-I've been able to keep it running straight off my Linux based laptop for over a week so far.
+### Docker
+
+1. Build the Docker image:
+   ```sh
+   docker build -t get_my_deck .
+   ```
+2. Run the Docker container:
+   ```sh
+   docker run get_my_deck --email <your_email> --password <your_password> --send_to_email <recipient_email> --smtp_host <smtp_host> [--test_email] [--refresh_time <seconds>]
+   ```
+
+## Parameters
+
+| Parameter       | Description                                      | Required | Default |
+|-----------------|--------------------------------------------------|----------|---------|
+| `--email`       | Email address to send notifications from         | Yes      | N/A     |
+| `--password`    | Password for the email account                   | Yes      | N/A     |
+| `--send_to_email` | Email address to send notifications to         | Yes      | N/A     |
+| `--smtp_host`   | SMTP host for sending email                      | Yes      | N/A     |
+| `--test_email`  | Send a test email and exit                       | No       | False   |
+| `--refresh_time`| Time in seconds between page refreshes           | No       | 60      |
+
+## Credits
+
+This is a fork of [maroofc/get_my_deck](https://github.com/maroofc/get_my_deck).
