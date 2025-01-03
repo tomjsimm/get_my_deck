@@ -3,4 +3,3 @@ build:
 
 down:
 	docker compose down --rmi local
-
