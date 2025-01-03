@@ -1,24 +1,25 @@
-import smtplib
-import argparse
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
+import os
+import requests
+from dotenv import load_dotenv
+import time
 from selenium.webdriver.common.by import By
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service
 from selenium.webdriver.firefox.options import Options
-import time
-from webdriver_manager.firefox import GeckoDriverManager
 from datetime import datetime
+
+# Load environment variables from .env file
+load_dotenv()
 
 browser_options = Options()
 browser_options.add_argument("--headless")
 url = "https://store.steampowered.com/sale/steamdeckrefurbished"
 
 def log(message):
-    print(str(datetime.now())+": "+str(message))
+    print(f"{datetime.now()}: {message}")
 
 def start():
-    service = Service(GeckoDriverManager().install())
+    service = Service("/usr/local/bin/geckodriver")
     driver = webdriver.Firefox(service=service, options=browser_options)
     driver.get(url)
     return driver
@@ -29,60 +30,54 @@ def refresh(driver):
 def quit(driver):
     driver.quit()
 
-def send_email(deck, email, password, send_to_email, smtp_host):
-    log("Sending Email reminder...")
-    subject = "Steam Deck In Stock"
-    message = str(deck)+" in Stock https://store.steampowered.com/sale/steamdeckrefurbished"
-    msg = MIMEMultipart()
-    msg['From'] = email
-    msg['To'] = send_to_email
-    msg['Subject'] = subject
-    msg.attach(MIMEText(message, 'plain'))
-    server = smtplib.SMTP(smtp_host, 587)
-    server.starttls()
-    server.login(email, password)
-    text = msg.as_string()
-    server.sendmail(email, send_to_email, text)
-    server.quit()
+def send_signal_message(deck, signal_api_url, signal_number, send_to_number):
+    log("Sending Signal message reminder...")
+    message = f"{deck} in Stock https://store.steampowered.com/sale/steamdeckrefurbished"
+    payload = {
+        "message": message,
+        "number": signal_number,
+        "recipients": [send_to_number]
+    }
+    response = requests.post(f"{signal_api_url}/v2/send", json=payload)
+    log(f"Signal API response: {response.status_code} - {response.text}")
+    if response.status_code in [200, 201]:
+        log("Signal message sent successfully.")
+    else:
+        log(f"Failed to send Signal message: {response.text}")
 
-def check_deck_status(deck, email, password, send_to_email, smtp_host):
-    deck = deck[1:] if deck.startswith("\n") else deck
-    deck = deck.replace("\n", " - ")
+def check_deck_status(deck, signal_api_url, signal_number, send_to_number):
+    deck = deck.strip()
     deckname = deck.split(" - ")[0]
     if "add" in deck.lower():
-        log(str(deckname)+" - "+"In Stock")
-        send_email(deckname, email, password, send_to_email, smtp_host)
+        log(f"{deckname} - In Stock")
+        send_signal_message(deckname, signal_api_url, signal_number, send_to_number)
         status = 1
     else:
-        log(str(deckname)+" - "+"Out of Stock")
+        log(f"{deckname} - Out of Stock")
         status = 0
     return status
 
-def runner(driver, email, password, send_to_email, smtp_host):
+def runner(driver, signal_api_url, signal_number, send_to_number):
     all_btn = driver.find_elements(By.XPATH, "//*[@id='SaleSection_33131']")
     if not all_btn:
         log("No elements found with the given XPath.")
         return 0, 0
     x = all_btn[0].text
-    if "€" in x:
-        parts = x.split("€")
-        if len(parts) >= 2:
-            sd512GBoled = parts[0]
-            sd1TBoled = parts[1]
-            status_512gb = check_deck_status(sd512GBoled, email, password, send_to_email, smtp_host)
-            status_1tb = check_deck_status(sd1TBoled, email, password, send_to_email, smtp_host)
-            return status_512gb, status_1tb
-        else:
-            log("Unexpected text format: "+str(x))
-            return 0, 0
-    else:
-        log("Unexpected text format: "+str(x))
-        return 0, 0
+    decks = x.split("\n")
+    status_512gb = 0
+    status_1tb = 0
+    for i in range(0, len(decks), 3):
+        deck = decks[i]
+        if "512 GB OLED" in deck:
+            status_512gb = check_deck_status(deck, signal_api_url, signal_number, send_to_number)
+        elif "1TB OLED" in deck:
+            status_1tb = check_deck_status(deck, signal_api_url, signal_number, send_to_number)
+    return status_512gb, status_1tb
 
-def get_my_deck(email, password, send_to_email, smtp_host, test_email, refresh_time):
-    if test_email:
-        send_email("Test Deck", email, password, send_to_email, smtp_host)
-        log("Test email sent. Exiting...")
+def get_my_deck(signal_api_url, signal_number, send_to_number, test_message, refresh_time):
+    if test_message:
+        send_signal_message("Test Deck", signal_api_url, signal_number, send_to_number)
+        log("Test message sent. Exiting...")
         return
 
     start_time = 10
@@ -91,26 +86,24 @@ def get_my_deck(email, password, send_to_email, smtp_host, test_email, refresh_t
     log("Started Scraper")
     while True:
         try:
-            sd512, sd1024 = runner(driver, email, password, send_to_email, smtp_host)
+            sd512, sd1024 = runner(driver, signal_api_url, signal_number, send_to_number)
             if sd512 or sd1024:
                 log("Deck is in stock! Exiting...")
                 quit(driver)
                 break
             refresh(driver)
-            log("Reloading page in "+str(refresh_time)+" seconds...")
+            log(f"Reloading page in {refresh_time} seconds...")
             time.sleep(refresh_time)  # Refresh the page once per minute
         except Exception as e:
-            print(e)
+            log(f"Exception occurred: {e}")
             quit(driver)
             driver = start()
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description='Steam Deck Stock Checker')
-    parser.add_argument('--email', required=True, help='Email address to send notifications from')
-    parser.add_argument('--password', required=True, help='Password for the email account')
-    parser.add_argument('--send_to_email', required=True, help='Email address to send notifications to')
-    parser.add_argument('--smtp_host', required=True, help='SMTP host for sending email')
-    parser.add_argument('--test_email', action='store_true', help='Send a test email and exit')
-    parser.add_argument('--refresh_time', type=int, default=3600, help='Time in seconds between page refreshes')
-    args = parser.parse_args()
-    get_my_deck(args.email, args.password, args.send_to_email, args.smtp_host, args.test_email, args.refresh_time)
+    signal_api_url = os.getenv('SIGNAL_API_URL')
+    signal_number = os.getenv('SIGNAL_NUMBER')
+    send_to_number = os.getenv('SEND_TO_NUMBER')
+    test_message = os.getenv('TEST_MESSAGE', 'false').lower() == 'true'
+    refresh_time = int(os.getenv('REFRESH_TIME', 3600))
+
+    get_my_deck(signal_api_url, signal_number, send_to_number, test_message, refresh_time)
