@@ -1,0 +1,6 @@
+services:
+  get_my_deck:
+    build: .
+    restart: unless-stopped
+    env_file:
+      - .env
