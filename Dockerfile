@@ -1,5 +1,5 @@
 # Use the official Python image as a base image
-FROM python:3.9-slim
+FROM python:3.13.1-slim
 
 # Set environment variables
 ENV PYTHONUNBUFFERED=1
@@ -8,13 +8,23 @@ ENV PYTHONUNBUFFERED=1
 RUN apt-get update && apt-get install -y \
     firefox-esr \
     wget \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Install geckodriver
-RUN wget -q https://github.com/mozilla/geckodriver/releases/download/v0.30.0/geckodriver-v0.30.0-linux64.tar.gz \
-    && tar -xzf geckodriver-v0.30.0-linux64.tar.gz \
+ARG TARGETARCH
+RUN echo "Architecture: $TARGETARCH" \
+    && if [ "$TARGETARCH" = "amd64" ]; then \
+    curl -f -LO https://github.com/mozilla/geckodriver/releases/download/v0.35.0/geckodriver-v0.35.0-linux64.tar.gz; \
+    tar -xzf geckodriver-v0.35.0-linux64.tar.gz; \
+    elif [ "$TARGETARCH" = "arm64" ]; then \
+    curl -f -LO https://github.com/mozilla/geckodriver/releases/download/v0.35.0/geckodriver-v0.35.0-linux-aarch64.tar.gz; \
+    tar -xzf geckodriver-v0.35.0-linux-aarch64.tar.gz; \
+    else \
+    echo "Unsupported architecture: $TARGETARCH"; exit 1; \
+    fi \
     && mv geckodriver /usr/local/bin/ \
-    && rm geckodriver-v0.30.0-linux64.tar.gz
+    && rm geckodriver-v0.35.0-*.tar.gz
 
 # Install Python dependencies
 COPY requirements.txt .
