@@ -1,46 +1,37 @@
 # Steam Deck Refurbished Stock Checker
 
-A simple scraper which checks the Steam Deck Refurb page for stock. This script sends email notifications when the Steam Deck is in stock.
+A simple scraper which checks the Steam Deck Refurb page for stock. This script sends signal notifications when the Steam Deck is in stock.
 
 ## Requirements
 
 - Python (Latest version)
 - Selenium WebDriver for Firefox via PIP
-  ```sh
-  pip install selenium webdriver-manager
-  ```
-- Email account for sending notifications
+- [Signal CLI Rest API](https://github.com/bbernhard/signal-cli-rest-api) for sending notifications
 
 ## Getting Started
 
-### Command Line
-
-```sh
-python get_my_deck.py --email <your_email> --password <your_password> --send_to_email <recipient_email> --smtp_host <smtp_host> [--test_email] [--refresh_time <seconds>]
-```
-
 ### Docker
 
-1. Build the Docker image:
+1. Build & run the Docker image:
    ```sh
-   docker build -t get_my_deck .
+   make build
    ```
-2. Run the Docker container:
+2. Destroy and clean up and local instances:
    ```sh
-   docker run get_my_deck --email <your_email> --password <your_password> --send_to_email <recipient_email> --smtp_host <smtp_host> [--test_email] [--refresh_time <seconds>]
+   make down
    ```
 
-## Parameters
+## Environment Variables (Docker)
 
-| Parameter       | Description                                      | Required | Default |
-|-----------------|--------------------------------------------------|----------|---------|
-| `--email`       | Email address to send notifications from         | Yes      | N/A     |
-| `--password`    | Password for the email account                   | Yes      | N/A     |
-| `--send_to_email` | Email address to send notifications to         | Yes      | N/A     |
-| `--smtp_host`   | SMTP host for sending email                      | Yes      | N/A     |
-| `--test_email`  | Send a test email and exit                       | No       | False   |
-| `--refresh_time`| Time in seconds between page refreshes           | No       | 3600    |
+```
+SIGNAL_API_URL=http://localhost:9922
+SIGNAL_NUMBER=+1234567890
+SEND_TO_NUMBER=+1234567890
+TEST_MESSAGE=false
+REFRESH_TIME=1800
+```
 
 ## Credits
 
-This is a fork of [maroofc/get_my_deck](https://github.com/maroofc/get_my_deck).
+- This is a fork of [timoknapp/get_my_deck](https://github.com/timoknapp/get_my_deck).
+- Which was a fork of [maroofc/get_my_deck](https://github.com/maroofc/get_my_deck).
